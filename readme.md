@@ -1,3 +1,5 @@
+<img width="1099" height="399" alt="Screenshot 2025-12-01 at 2 08 58 AM" src="https://github.com/user-attachments/assets/23c84597-b520-4b25-aece-04c24a0b0d23" />
+
 # NitiArthik - Personal Finance Portal
 
 A secure web portal that allows users to upload multiple bank statements and credit card bills in PDF format, automatically extracts all transactions, and provides a unified, filterable "consolidated transactions" view.
