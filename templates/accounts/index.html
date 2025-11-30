@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Accounts - NitiArthik{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 30px;">Accounts</h1>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Nickname</th>
+                <th>Type</th>
+                <th>Statements</th>
+                <th>Transactions</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in accounts_with_stats %}
+            <tr>
+                <td>{{ item.account.nickname }}</td>
+                <td>{{ item.account.account_type.value }}</td>
+                <td>{{ item.statement_count }}</td>
+                <td>{{ item.transaction_count }}</td>
+                <td>
+                    <a href="{{ url_for('accounts.view', account_id=item.account.id) }}" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">View Transactions</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+
+
+
+

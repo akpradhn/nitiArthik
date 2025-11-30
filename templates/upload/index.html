@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Statements - NitiArthik{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 30px;">Upload Statements</h1>
+
+<div class="card">
+    <div class="card-header">Upload PDF Statements</div>
+    <form method="POST" action="{{ url_for('upload.index') }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="files">Select PDF Files (Multiple files allowed)</label>
+            <input type="file" id="files" name="files" accept=".pdf" multiple required>
+        </div>
+        
+        <div class="form-group">
+            <label for="account_type">Account Type</label>
+            <select id="account_type" name="account_type" required>
+                <option value="">Select Account Type</option>
+                <option value="BANK">Bank Account</option>
+                <option value="CREDIT_CARD">Credit Card</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="radio" name="account_option" value="existing" checked> Use Existing Account
+            </label>
+            <label>
+                <input type="radio" name="account_option" value="new"> Create New Account
+            </label>
+        </div>
+        
+        <div class="form-group" id="existing_account_group">
+            <label for="existing_account_id">Select Account</label>
+            <select id="existing_account_id" name="existing_account_id">
+                <option value="">Select Account</option>
+                {% for account in accounts %}
+                <option value="{{ account.id }}">{{ account.nickname }} ({{ account.account_type.value }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group" id="new_account_group" style="display: none;">
+            <label for="account_nickname">Account Nickname</label>
+            <input type="text" id="account_nickname" name="account_nickname" placeholder="e.g., SBI Salary Account">
+        </div>
+        
+        <div class="form-group">
+            <label for="statement_start">Statement Start Date (Optional)</label>
+            <input type="date" id="statement_start" name="statement_start">
+        </div>
+        
+        <div class="form-group">
+            <label for="statement_end">Statement End Date (Optional)</label>
+            <input type="date" id="statement_end" name="statement_end">
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Upload and Parse</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">Recent Uploads</div>
+    <table>
+        <thead>
+            <tr>
+                <th>File Name</th>
+                <th>Account</th>
+                <th>Uploaded At</th>
+                <th>Status</th>
+                <th>Transactions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for file in uploaded_files %}
+            <tr>
+                <td>{{ file.original_file_name }}</td>
+                <td>{{ file.account.nickname }}</td>
+                <td>{{ file.uploaded_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                <td>
+                    <span id="status-{{ file.id }}">{{ file.parse_status.value }}</span>
+                    {% if file.parse_status.value == 'PROCESSING' %}
+                    <span id="loading-{{ file.id }}">⏳</span>
+                    {% endif %}
+                </td>
+                <td id="txn-count-{{ file.id }}">
+                    {% if file.parse_status.value == 'SUCCESS' %}
+                    <a href="{{ url_for('statements.view_transactions', file_id=file.id) }}">View</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+            </tr>
+            {% if file.parse_status.value == 'FAILED' and file.parse_error %}
+            <tr>
+                <td colspan="5" style="color: red; font-size: 12px; padding: 10px; background-color: #fee2e2;">
+                    <strong>Error:</strong> {{ file.parse_error[:300] }}
+                    <br>
+                    <form method="POST" action="{{ url_for('upload.retry_parse', file_id=file.id) }}" style="display: inline; margin-top: 5px;">
+                        <button type="submit" class="btn btn-secondary" style="padding: 2px 8px; font-size: 11px;">Retry</button>
+                    </form>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Toggle between existing and new account
+    document.querySelectorAll('input[name="account_option"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'existing') {
+                document.getElementById('existing_account_group').style.display = 'block';
+                document.getElementById('new_account_group').style.display = 'none';
+                document.getElementById('existing_account_id').required = true;
+                document.getElementById('account_nickname').required = false;
+            } else {
+                document.getElementById('existing_account_group').style.display = 'none';
+                document.getElementById('new_account_group').style.display = 'block';
+                document.getElementById('existing_account_id').required = false;
+                document.getElementById('account_nickname').required = true;
+            }
+        });
+    });
+    
+    // Poll for status updates on processing files
+    {% for file in uploaded_files %}
+    {% if file.parse_status.value == 'PROCESSING' or file.parse_status.value == 'PENDING' %}
+    (function(fileId) {
+        const checkStatus = setInterval(function() {
+            fetch('/upload/status/' + fileId)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status-' + fileId).textContent = data.status;
+                    if (data.status === 'SUCCESS') {
+                        document.getElementById('loading-' + fileId).remove();
+                        document.getElementById('txn-count-' + fileId).innerHTML = 
+                            '<a href="/statements/' + fileId + '/transactions">View (' + data.transaction_count + ')</a>';
+                        clearInterval(checkStatus);
+                    } else if (data.status === 'FAILED') {
+                        document.getElementById('loading-' + fileId).remove();
+                        clearInterval(checkStatus);
+                    }
+                })
+                .catch(err => console.error('Error checking status:', err));
+        }, 3000); // Check every 3 seconds
+    })({{ file.id }});
+    {% endif %}
+    {% endfor %}
+</script>
+{% endblock %}
+
+

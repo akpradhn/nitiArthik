@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Statements - NitiArthik{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 30px;">Uploaded Statements</h1>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>File Name</th>
+                <th>Account</th>
+                <th>Uploaded Date</th>
+                <th>Status</th>
+                <th>Transactions</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in statements_with_counts %}
+            <tr>
+                <td>{{ item.statement.original_file_name }}</td>
+                <td>{{ item.statement.account.nickname }}</td>
+                <td>{{ item.statement.uploaded_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                <td>
+                    <span style="color: {% if item.statement.parse_status.value == 'SUCCESS' %}green{% elif item.statement.parse_status.value == 'FAILED' %}red{% else %}orange{% endif %};">
+                        {{ item.statement.parse_status.value }}
+                    </span>
+                </td>
+                <td>{{ item.transaction_count }}</td>
+                <td>
+                    {% if item.statement.parse_status.value == 'SUCCESS' %}
+                    <a href="{{ url_for('statements.view_transactions', file_id=item.statement.id) }}" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">View Transactions</a>
+                    {% elif item.statement.parse_status.value == 'FAILED' %}
+                    <form method="POST" action="{{ url_for('upload.retry_parse', file_id=item.statement.id) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">Retry Parse</button>
+                    </form>
+                    {% elif item.statement.parse_status.value == 'PROCESSING' %}
+                    <span style="color: orange;">Processing...</span>
+                    {% else %}
+                    <span style="color: grey;">Pending...</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% if item.statement.parse_status.value == 'FAILED' and item.statement.parse_error %}
+            <tr>
+                <td colspan="6" style="color: red; font-size: 12px; padding: 10px; background-color: #fee2e2;">
+                    <strong>Error:</strong> {{ item.statement.parse_error[:500] }}
+                    {% if item.statement.parse_error|length > 500 %}
+                    <br><small>(Error message truncated. Check full error in database if needed.)</small>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+

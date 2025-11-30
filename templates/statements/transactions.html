@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Statement Transactions - NitiArthik{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 30px;">Transactions from {{ statement.original_file_name }}</h1>
+
+<div class="card">
+    <p><strong>Account:</strong> {{ statement.account.nickname }} ({{ statement.account.account_type.value }})</p>
+    <p><strong>Uploaded:</strong> {{ statement.uploaded_at.strftime('%d-%m-%Y %H:%M') }}</p>
+    <p><strong>Status:</strong> {{ statement.parse_status.value }}</p>
+    {% if statement.statement_start_date or statement.statement_end_date %}
+    <p><strong>Period:</strong> 
+        {% if statement.statement_start_date %}{{ statement.statement_start_date.strftime('%d-%m-%Y') }}{% endif %}
+        {% if statement.statement_start_date and statement.statement_end_date %} to {% endif %}
+        {% if statement.statement_end_date %}{{ statement.statement_end_date.strftime('%d-%m-%Y') }}{% endif %}
+    </p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">Transactions ({{ transactions|length }})</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Direction</th>
+                <th>Amount</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr>
+                <td>{{ txn.date.strftime('%d-%m-%Y') }}</td>
+                <td>{{ txn.description }}</td>
+                <td>{{ txn.category }}</td>
+                <td>
+                    <span style="color: {% if txn.direction.value == 'credit' %}green{% else %}red{% endif %};">
+                        {{ txn.direction.value|upper }}
+                    </span>
+                </td>
+                <td>₹{{ "{:,.2f}".format(txn.amount) }}</td>
+                <td>{% if txn.balance_after %}₹{{ "{:,.2f}".format(txn.balance_after) }}{% else %}-{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+
+
+
+

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Consolidated Transactions - NitiArthik{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 30px;">Consolidated Transactions</h1>
+
+<div class="stats-grid">
+    <div class="stat-card credit">
+        <div class="stat-label">Total Credits</div>
+        <div class="stat-value">₹{{ "{:,.2f}".format(summary.credits) }}</div>
+    </div>
+    <div class="stat-card debit">
+        <div class="stat-label">Total Debits</div>
+        <div class="stat-value">₹{{ "{:,.2f}".format(summary.debits) }}</div>
+    </div>
+    <div class="stat-card net">
+        <div class="stat-label">Net</div>
+        <div class="stat-value">₹{{ "{:,.2f}".format(summary.net) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value">{{ summary.count }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Filters</div>
+    <form method="GET" action="{{ url_for('transactions.index') }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <div class="form-group">
+            <label for="search">Search Description</label>
+            <input type="text" id="search" name="search" value="{{ filters.search }}" placeholder="Search...">
+        </div>
+        
+        <div class="form-group">
+            <label for="account_id">Account</label>
+            <select id="account_id" name="account_id" multiple style="height: 38px;">
+                {% for account in accounts %}
+                <option value="{{ account.id }}" {% if account.id in filters.account_ids %}selected{% endif %}>
+                    {{ account.nickname }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="account_type">Account Type</label>
+            <select id="account_type" name="account_type">
+                <option value="">All</option>
+                <option value="BANK" {% if filters.account_type == 'BANK' %}selected{% endif %}>Bank</option>
+                <option value="CREDIT_CARD" {% if filters.account_type == 'CREDIT_CARD' %}selected{% endif %}>Credit Card</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="direction">Direction</label>
+            <select id="direction" name="direction">
+                <option value="">All</option>
+                <option value="credit" {% if filters.direction == 'credit' %}selected{% endif %}>Credit</option>
+                <option value="debit" {% if filters.direction == 'debit' %}selected{% endif %}>Debit</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+                <option value="">All</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="date_from">From Date</label>
+            <input type="date" id="date_from" name="date_from" value="{{ filters.date_from }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="date_to">To Date</label>
+            <input type="date" id="date_to" name="date_to" value="{{ filters.date_to }}">
+        </div>
+        
+        <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <a href="{{ url_for('transactions.index') }}" class="btn btn-secondary">Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">Transactions</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Account</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Direction</th>
+                <th>Amount</th>
+                <th>Balance</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions %}
+            <tr>
+                <td>{{ txn.date.strftime('%d-%m-%Y') }}</td>
+                <td>{{ txn.account.nickname }}<br><small style="color: #6b7280;">{{ txn.account.account_type.value }}</small></td>
+                <td>{{ txn.description }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('transactions.edit', transaction_id=txn.id) }}" style="display: inline;">
+                        <input type="text" name="category" value="{{ txn.category }}" style="width: 120px; padding: 4px; font-size: 12px;">
+                        <button type="submit" style="padding: 4px 8px; font-size: 11px; margin-left: 5px;">Update</button>
+                    </form>
+                </td>
+                <td>
+                    <span style="color: {% if txn.direction.value == 'credit' %}green{% else %}red{% endif %};">
+                        {{ txn.direction.value|upper }}
+                    </span>
+                </td>
+                <td>₹{{ "{:,.2f}".format(txn.amount) }}</td>
+                <td>{% if txn.balance_after %}₹{{ "{:,.2f}".format(txn.balance_after) }}{% else %}-{% endif %}</td>
+                <td>
+                    <button onclick="editDescription({{ txn.id }}, '{{ txn.description|replace("'", "\\'") }}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Edit Desc</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if pagination.pages > 1 %}
+    <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('transactions.index', page=pagination.prev_num, **request.args) }}" class="btn btn-secondary">Previous</a>
+        {% endif %}
+        <span style="padding: 8px 16px; display: inline-block;">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+        {% if pagination.has_next %}
+        <a href="{{ url_for('transactions.index', page=pagination.next_num, **request.args) }}" class="btn btn-secondary">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 500px; margin: 20px;">
+        <h3>Edit Description</h3>
+        <form id="editForm" method="POST">
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="editDescription" name="description" rows="4" required></textarea>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function editDescription(txnId, currentDesc) {
+        document.getElementById('editForm').action = '/transactions/' + txnId + '/edit';
+        document.getElementById('editDescription').value = currentDesc;
+        document.getElementById('editModal').style.display = 'flex';
+    }
+    
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+</script>
+{% endblock %}
+
+
+
+
+
