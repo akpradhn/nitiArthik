@@ -1,10 +1,10 @@
 #!/bin/bash
-# Virtual environment setup script for NitiArthik
+# Combined setup and run script for NitiArthik
 
 set -e  # Exit on error
 
 echo "=========================================="
-echo "NitiArthik - Virtual Environment Setup"
+echo "NitiArthik - Setup and Start"
 echo "=========================================="
 echo ""
 
@@ -58,14 +58,18 @@ mkdir -p uploads
 # Create .env file if it doesn't exist
 if [ ! -f ".env" ]; then
     echo ""
-    echo "Creating .env file from .env.example..."
+    echo "Creating .env file..."
     if [ -f ".env.example" ]; then
         cp .env.example .env
         echo "Please edit .env file and set your SECRET_KEY"
     else
-        echo "SECRET_KEY=dev-secret-key-change-in-production" > .env
-        echo "DATABASE_URL=sqlite:///nitiarthik.db" >> .env
+        cat > .env << EOF
+SECRET_KEY=dev-secret-key-change-in-production
+DATABASE_URL=sqlite:///nitiarthik.db
+# GOOGLE_GEMINI_API_KEY=your-gemini-api-key-here
+EOF
         echo "Created .env file with default values. Please update SECRET_KEY for production."
+        echo "Optional: Add GOOGLE_GEMINI_API_KEY for better PDF parsing with Gemini AI"
     fi
 fi
 
@@ -74,17 +78,27 @@ echo "=========================================="
 echo "Setup completed successfully!"
 echo "=========================================="
 echo ""
-echo "To activate the virtual environment manually, run:"
-echo "  source venv/bin/activate"
+
+# Check if dependencies are installed
+if ! python -c "import flask" 2>/dev/null; then
+    echo "Dependencies not fully installed. Installing..."
+    pip install -r requirements.txt
+fi
+
+# Create uploads directory if it doesn't exist
+mkdir -p uploads
+
+# Run the application
 echo ""
-echo "To run the application:"
-echo "  python app.py"
+echo "=========================================="
+echo "Starting NitiArthik application..."
+echo "=========================================="
 echo ""
-echo "Or use the run script:"
-echo "  ./run.sh"
+echo "Access the application at http://localhost:5000"
+echo "Press CTRL+C to stop the server"
+echo ""
+echo "=========================================="
 echo ""
 
-
-
-
+python app.py
 
