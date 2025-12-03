@@ -165,3 +165,19 @@ def edit(transaction_id):
     
     return redirect(request.referrer or url_for('transactions.index'))
 
+
+@transactions_bp.route('/transactions/<int:transaction_id>/delete', methods=['POST'])
+@login_required
+def delete(transaction_id):
+    """Delete a single transaction owned by the current user."""
+    transaction = Transaction.query.filter_by(
+        id=transaction_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    db.session.delete(transaction)
+    db.session.commit()
+    flash('Transaction deleted successfully.', 'success')
+
+    return redirect(request.referrer or url_for('transactions.index'))
+

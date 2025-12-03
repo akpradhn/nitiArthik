@@ -31,7 +31,7 @@
                 <td>{{ item.transaction_count }}</td>
                 <td>
                     {% if item.statement.parse_status.value == 'SUCCESS' %}
-                    <a href="{{ url_for('statements.view_transactions', file_id=item.statement.id) }}" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">View Transactions</a>
+                    <a href="{{ url_for('statements.view_transactions', file_id=item.statement.id) }}" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px; margin-right: 4px;">View Transactions</a>
                     {% elif item.statement.parse_status.value == 'FAILED' %}
                     <form method="POST" action="{{ url_for('upload.retry_parse', file_id=item.statement.id) }}" style="display: inline;">
                         <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">Retry Parse</button>
@@ -41,6 +41,16 @@
                     {% else %}
                     <span style="color: grey;">Pending...</span>
                     {% endif %}
+                    <form method="POST"
+                          action="{{ url_for('statements.delete_statement', file_id=item.statement.id) }}"
+                          style="display: inline; margin-left: 4px;"
+                          onsubmit="return confirm('Delete this statement and all its transactions? This cannot be undone.');">
+                        <button type="submit"
+                                class="btn btn-danger"
+                                style="padding: 4px 8px; font-size: 12px; background-color: #dc2626; border-color: #b91c1c;">
+                            Delete
+                        </button>
+                    </form>
                 </td>
             </tr>
             {% if item.statement.parse_status.value == 'FAILED' and item.statement.parse_error %}

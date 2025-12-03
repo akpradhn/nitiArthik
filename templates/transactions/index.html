@@ -122,8 +122,18 @@
                 </td>
                 <td>₹{{ "{:,.2f}".format(txn.amount) }}</td>
                 <td>{% if txn.balance_after %}₹{{ "{:,.2f}".format(txn.balance_after) }}{% else %}-{% endif %}</td>
-                <td>
-                    <button onclick="editDescription({{ txn.id }}, '{{ txn.description|replace("'", "\\'") }}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Edit Desc</button>
+                <td style="white-space: nowrap;">
+                    <button onclick="editDescription({{ txn.id }}, '{{ txn.description|replace("'", "\\'") }}')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;">Edit Desc</button>
+                    <form method="POST"
+                          action="{{ url_for('transactions.delete', transaction_id=txn.id) }}"
+                          style="display: inline;"
+                          onsubmit="return confirm('Delete this transaction? This cannot be undone.');">
+                        <button type="submit"
+                                class="btn btn-danger"
+                                style="padding: 4px 8px; font-size: 11px; background-color: #dc2626; border-color: #b91c1c;">
+                            Delete
+                        </button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}
@@ -171,6 +181,8 @@
     }
 </script>
 {% endblock %}
+
+
 
 
 
